@@ -26,7 +26,7 @@ fordeamon(){
         : ${NODE_USER:=root}
         : ${NODE_APP:=index.js}
         : ${NODE_DIR:=~}
-        : ${FOREVER_LOG:=$HOME/foreverd.log}
+        : ${FOREVER_LOG:=/var/log/foreverd.log}
 #        if [ $(whoami) != $NODE_USER ]; then
 #            su -c "$0 $1 $name" $NODE_USER
 #        else
