@@ -1,0 +1,10 @@
+/var/log/foreverd.log {
+    daily
+    size 10k
+    rotate 10
+    missingok
+    notifempty
+    copytruncate
+    compress
+    
+}
