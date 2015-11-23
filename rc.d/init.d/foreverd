@@ -1,0 +1,94 @@
+#!/bin/sh
+#
+# chkconfig: 2345 88 14
+# description: Description of the Service
+# http://multix.jp/daemon-nodejs/
+#
+# Below is the source function library, leave it be
+. /etc/init.d/functions
+
+# result of whereis node_modules
+export NODE_PATH=/usr/lib/node_modules
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+PATH=/usr/local/bin:$PATH
+
+fordeamon(){
+    for conf in /etc/forever.d/*.conf; do
+        name=$(basename $conf .conf)
+        if [ -n "$2" ]; then
+            if [ "$name" != "$2" ]; then
+                continue
+            fi
+        fi
+        source $conf
+        export HOME=$HOME
+        : ${NODE_USER:=root}
+        : ${NODE_APP:=index.js}
+        : ${NODE_DIR:=~}
+        : ${FOREVER_LOG:=$HOME/foreverd.log}
+#        if [ $(whoami) != $NODE_USER ]; then
+#            su -c "$0 $1 $name" $NODE_USER
+#        else
+            echo $"Process id is $name"
+            case "$1" in
+                start)
+                    ret=`forever list | grep $name`
+                    if [ "$ret" != '' ]; then
+                      echo $name' is already started.'
+                      exit
+                    fi
+                    touch $FOREVER_LOG
+                    chown $NODE_USER $FOREVER_LOG
+                    NODE_ENV=$NODE_ENV \
+                        daemon --user $NODE_USER HOME=$HOME forever $OPTS \
+                        --sourceDir="$NODE_DIR" \
+                        --workingDir="$NODE_DIR" \
+                        --minUptime=1000 \
+                        --spinSleepTime=5000 \
+                        --uid=$name \
+                        -l "$FOREVER_LOG" \
+                        -a \
+                        start $NODE_APP
+                    ;;
+                stop)
+                    NODE_ENV=$NODE_ENV \
+                        forever stop $name
+                    ;;
+                restart)
+                    NODE_ENV=$NODE_ENV \
+                        forever restart $name
+                    ;;
+                list)
+                    NODE_ENV=$NODE_ENV \
+                        forever list | grep $name
+                    ;;
+            esac
+#        fi
+    done
+}
+
+case "$1" in
+    start)
+        echo "Start service forever"
+        fordeamon start $2
+        ;;
+    stop)
+        echo "Stop service forever"
+        fordeamon stop $2
+        ;;
+    restart)
+        echo "Restart service forever"
+        fordeamon restart $2
+        ;;
+    status)
+        fordeamon list $2
+        ;;
+    list)
+        fordeamon list $2
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart|status|list} [name]"
+        exit 1
+        ;;
+esac
