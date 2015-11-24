@@ -23,20 +23,27 @@ fordeamon(){
         fi
         source $conf
         export HOME=$HOME
-        : ${NODE_USER:=root}
         : ${NODE_APP:=index.js}
         : ${NODE_DIR:=~}
+        : ${NODE_USER:=root}
         : ${FOREVER_LOG:=/var/log/foreverd.log}
+
+        # initial directory
+        forever >/dev/null 2>&1
+        chown $NODE_USER.$NODE_USER $HOME/.forever
+        chown $NODE_USER.$NODE_USER $HOME/.forever/pids
+        chown $NODE_USER.$NODE_USER $HOME/.forever/sock
+
 #        if [ $(whoami) != $NODE_USER ]; then
 #            su -c "$0 $1 $name" $NODE_USER
 #        else
             echo $"Process id is $name"
             case "$1" in
                 start)
-                    ret=`forever list | grep $name`
+                    ret=`forever list | grep -w "$name "`
                     if [ "$ret" != '' ]; then
                       echo $name' is already started.'
-                      exit
+                      continue
                     fi
                     touch $FOREVER_LOG
                     chown $NODE_USER $FOREVER_LOG
@@ -50,6 +57,7 @@ fordeamon(){
                         -l "$FOREVER_LOG" \
                         -a \
                         start $NODE_APP
+                    forever list | grep -w "$name " | awk -F " " '{print $6}' > /var/run/foreverd-$name.pid
                     ;;
                 stop)
                     NODE_ENV=$NODE_ENV \
@@ -61,7 +69,7 @@ fordeamon(){
                     ;;
                 list)
                     NODE_ENV=$NODE_ENV \
-                        forever list | grep $name
+                        forever list | grep -w "$name "
                     ;;
             esac
 #        fi
